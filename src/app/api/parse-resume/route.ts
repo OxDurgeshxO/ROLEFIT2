@@ -37,15 +37,10 @@ export async function POST(req: Request) {
 
   try {
     if (name.endsWith(".pdf")) {
-      const { PDFParse } = await import("pdf-parse");
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      try {
-        const out = await parser.getText();
-        text = out.text;
-        pages = out.total;
-      } finally {
-        await parser.destroy().catch(() => {});
-      }
+      const pdfParse = (await import("pdf-parse")).default;
+      const out = await pdfParse(buffer);
+      text = out.text;
+      pages = out.numpages;
     } else if (name.endsWith(".docx")) {
       const mammoth = await import("mammoth");
       const out = await mammoth.extractRawText({ buffer });
@@ -68,7 +63,7 @@ export async function POST(req: Request) {
     );
   }
 
-  text = text.replace(/\r\n?/g, "\n").replace(/ /g, " ").trim();
+  text = text.replace(/\r\n?/g, "\n").replace(/[\u00A0\u202F\u2009]/g, " ").trim();
   if (text.length < MIN_TEXT) {
     return NextResponse.json(
       { error: "We couldn't find enough text in that file — it might be a scanned image. Try copy-pasting instead." },
