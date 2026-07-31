@@ -37,11 +37,14 @@ export async function POST(req: Request) {
 
   try {
     if (name.endsWith(".pdf")) {
-      const pdfParse = (await import("pdf-parse")).default;
-      const out = await pdfParse(buffer);
-      text = out.text;
-      pages = out.numpages;
-    } else if (name.endsWith(".docx")) {
+  const pdfModule = await import("pdf-parse");
+  const pdfParse: any =
+    (pdfModule as any).default || (pdfModule as any);
+
+  const out = await pdfParse(buffer);
+  text = out.text;
+  pages = (out as any).numpages ?? null;
+} else if (name.endsWith(".docx")) {
       const mammoth = await import("mammoth");
       const out = await mammoth.extractRawText({ buffer });
       text = out.value;
